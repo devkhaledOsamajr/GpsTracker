@@ -11,13 +11,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.gpstracker.databinding.ActivityMainBinding
 import com.google.android.gms.location.*
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(),OnMapReadyCallback {
 
     private val requestGpsPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        Log.d("GPS_TRACKER", "Permissions result: $permissions")
+        Log.e("GPS_TRACKER", "Permissions result: $permissions")
         if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         ) {
@@ -26,17 +31,23 @@ class MainActivity : AppCompatActivity() {
             Log.e("GPS_TRACKER", "Location permissions denied.")
         }
     }
-
+    var userLatLng :LatLng? = null
+    var googleMap:GoogleMap? = null
     private lateinit var fusedLocationProvider: FusedLocationProviderClient
     private lateinit var binding: ActivityMainBinding
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             locationResult.locations.forEach { location ->
+                userLatLng = LatLng(location.latitude,location.longitude)
                 Log.e("GPS_TRACKER", "longitude: ${location.longitude}")
                 Log.e("GPS_TRACKER", "latitude: ${location.latitude}")
+                drawMarkerOnMap()
             }
         }
+    }
+    fun drawMarkerOnMap(){
+
     }
 
     @SuppressLint("MissingPermission")
@@ -52,6 +63,13 @@ class MainActivity : AppCompatActivity() {
             locationCallback,
             Looper.getMainLooper()
         )
+
+
+        val mapFragment = supportFragmentManager
+            .findFragmentById(R.id.map) as SupportMapFragment
+        mapFragment.getMapAsync(this)
+
+
 
         fusedLocationProvider.getCurrentLocation(currentLocationRequest, null)
             .addOnSuccessListener { location ->
@@ -74,7 +92,7 @@ class MainActivity : AppCompatActivity() {
             this,
             requestedPermission
         ) == PackageManager.PERMISSION_GRANTED
-        Log.d("GPS_TRACKER", "$requestedPermission is granted: $isGranted")
+        Log.e("GPS_TRACKER", "$requestedPermission is granted: $isGranted")
         return isGranted
     }
 
@@ -122,5 +140,9 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         fusedLocationProvider.removeLocationUpdates(locationCallback)
+    }
+
+    override fun onMapReady(googleMap: GoogleMap) {
+       this.googleMap = googleMap
     }
 }
